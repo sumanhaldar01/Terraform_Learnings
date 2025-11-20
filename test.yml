@@ -1,0 +1,108 @@
+chai_type: masala_chai
+temperature: hot
+servings: 2 #inline comment
+
+chai_recipe:
+  base: black_tea
+  milk: toned_milk
+
+chai_name: Milk tea
+description: "Chai with ginger"
+tagline: 'Add sugar according to taste'
+
+Instructions: |
+  boli water
+  add tea leaves
+  "add milk & sugar"
+
+Instructions_two: >
+  boli water
+  add tea leaves
+  add milk & sugar
+
+cups_per_day: 3
+cups_per_day_two: 3.5
+cups_per_day_three: 3.5e+2
+cups_per_day_four: 0xFF22FF
+
+is_hot: true #can write false
+add_sugar: yes
+add_salt: no
+instant: on #can write off
+
+null_values: null
+alternative_null: ~ #also null
+
+morning_time: 2025-12-12
+local_time: 2025-12-12 02:59:34
+
+#lists
+spices:
+  - ginger
+  - cloves
+  - black_tea_pepper
+  - true
+  - 100
+
+#spices: [cardamom, ginger, cloves]  old list format
+stepping_times: [3,2,1]
+
+#nested list
+chai_categories: 
+  - name: Traditional
+    varities:
+      - Masala Chai
+      - Ginger Chai
+  - name: Modern
+    varities:
+     - Vanilla Chai
+     - Chocolate chai   
+
+#dictionaries   
+masala_chai:
+  ingredients:
+    tea: black_tea
+    liquid:
+      water: 220ml
+      milk: 100ml
+    spices:
+      ginger: 1_inch
+      cinnamon: 1_stick
+  preparation:
+    method: simmer
+    duration: 5_minutes 
+
+#dictionaries_Lists
+chai_menu:
+  - name: Milked tea
+    price: 15
+    size: regular 
+
+  - name: Ginger tea
+    price: 15
+    size: regular
+
+default_chai_base: &default_base      
+  tea: black_tea
+  water: 200ml
+  brewing_time: 5
+
+morning_chai:
+  <<: *default_base
+  milk: 100ml  
+  
+zip_code: !!str 12345 #force str 
+count: !!int "123"
+
+#sets 
+unique_spices: !!set
+  ? cardamom
+  ? ginger
+  ? cloves
+    
+
+
+
+
+
+
