@@ -87,19 +87,38 @@ resource "aws_security_group" "my_sg" {
 
 #EC2 Instance
 resource "aws_instance" "my_instance"{
+
+    #count = 3 #to create multiple instances (META-ARGUMENT)
+
+    #for_each = toset(["instance1","instance2","instance3"]) #alternative way to create multiple instances
+
+    for_each = tomap({
+      "instance1" = "t2.micro",
+      "instance2" = "t3.large",
+    })
+
+    depends_on = [ aws_key_pair.my_test_key, aws_security_group.my_sg ]
+
     ami= var.ec2_ami_id
-    instance_type = var.ec2_instance_type
+    #instance_type = var.ec2_instance_type
+    instance_type = each.value  # when using for_each
     key_name = aws_key_pair.my_test_key.key_name
     security_groups = [aws_security_group.my_sg.name]
     subnet_id = aws_subnet.my_subnet.id
     user_data = file("nginx_install.sh")
     root_block_device {
-      volume_size = var.ec2_root_volume_size
+      #volume_size = var.ec2_default_root_volume_size
+      volume_size = var.environment == "prod" ? 20 : var.ec2_default_root_volume_size #conditional expression
       volume_type = "gp3"
     }
     tags ={
-      Name ="Terraform-EC2-instance"
+      #Name ="Terraform-EC2-instance"
+      Name = each.key  # or "Terraform-EC2-${each.key}"
     }
+}
 
-    
+resource aws_instance another_instance {  #example of importing existing resource 
+    ami = "unknown"
+    instance_type = "unknown"
+ 
 }
