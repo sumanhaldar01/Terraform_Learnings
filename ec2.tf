@@ -6,7 +6,8 @@ resource aws_key_pair my_test_key {
 
 #VPC & Subnet
 resource aws_vpc my_vpc{
-    cidr_block = "10.0.0.0/16"
+    cidr_block = "10.0.0.0/16" # CIDR stands for Classless Inter-Domain Routing
+    assign_generated_ipv6_cidr_block = true #enable IPv6
     tags = {
     Name = "Terraform-vpc"
   }
@@ -46,12 +47,70 @@ resource "aws_route_table_association" "my_route_table_association" {
   route_table_id = aws_route_table.my_route_table.id
 }
 
+#Private Subnet
+resource "aws_subnet" "private_subnet" {
+  vpc_id            = aws_vpc.my_vpc.id
+  cidr_block        = "10.0.2.0/24"
+
+  tags = {
+    Name = "Terraform-private-subnet"
+  }
+}
+
+#Elastic IP for NAT Gateway
+resource "aws_eip" "nat_eip" {
+  domain = "vpc"
+  
+  tags = {
+    Name = "Terraform-nat-eip"
+  }
+
+  depends_on = [aws_internet_gateway.my_igw]
+}
+
+#NAT Gateway in Public Subnet
+resource "aws_nat_gateway" "nat_gateway" {
+  allocation_id = aws_eip.nat_eip.id
+  subnet_id     = aws_subnet.my_subnet.id
+
+  tags = {
+    Name = "Terraform-nat-gateway"
+  }
+
+  depends_on = [aws_internet_gateway.my_igw]
+}
+
+#Route Table for Private Subnet
+resource "aws_route_table" "private_route_table" {
+  vpc_id = aws_vpc.my_vpc.id
+
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.nat_gateway.id
+  }
+
+  tags = {
+    Name = "Terraform-private-route-table"
+  }
+}
+
+#Route Table Association for Private Subnet
+resource "aws_route_table_association" "private_route_table_association" {
+  subnet_id      = aws_subnet.private_subnet.id
+  route_table_id = aws_route_table.private_route_table.id
+}
+
+#For reference, to use the default VPC instead of creating a new one.
+# data "aws_vpc" "default" {
+#   default = true
+# }
 #Security Group
 
 resource "aws_security_group" "my_sg" {
     name = "Terraform-sg"
     description = "this is TF generated security group"
     vpc_id = aws_vpc.my_vpc.id #interpolation syntax
+    # vpc_id = data.aws_vpc.default.id #if using default VPC
     
     ingress {
         from_port = 22
