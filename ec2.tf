@@ -162,7 +162,9 @@ resource "aws_instance" "my_instance"{
     #instance_type = var.ec2_instance_type
     instance_type = each.value  # when using for_each
     key_name = aws_key_pair.my_test_key.key_name
-    security_groups = [aws_security_group.my_sg.name]
+    vpc_security_group_ids = [
+    aws_security_group.my_sg.id
+    ]
     subnet_id = aws_subnet.my_subnet.id
     user_data = file("nginx_install.sh")
     root_block_device {
@@ -180,4 +182,5 @@ resource aws_instance another_instance {  #example of importing existing resourc
     ami = "unknown"
     instance_type = "unknown"
  
+
 }
