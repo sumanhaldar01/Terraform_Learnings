@@ -162,6 +162,7 @@ resource "aws_instance" "my_instance"{
     #instance_type = var.ec2_instance_type
     instance_type = each.value  # when using for_each
     key_name = aws_key_pair.my_test_key.key_name
+    #security_groups = ["default"] for default sg
     vpc_security_group_ids = [
     aws_security_group.my_sg.id
     ]
@@ -184,3 +185,4 @@ resource aws_instance another_instance {  #example of importing existing resourc
  
 
 }
+
