@@ -40,7 +40,7 @@ data "aws_security_group" "default" {
 #Ami from exsting instance
 # Fetch existing EC2 instance by Name tag
 data "aws_instance" "nautilus_ec2"{
-  filters{
+  filter {
     name= "tag:name"
     values =["nautilus-ec2"]
   }
