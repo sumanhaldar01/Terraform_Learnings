@@ -36,3 +36,21 @@ resource "aws_instance" "nautilus_ec2" {
 data "aws_security_group" "default" {
   name = "default"
 }
+
+#Ami from exsting instance
+# Fetch existing EC2 instance by Name tag
+data "aws_instance" "nautilus_ec2"{
+  filters{
+    name= "tag:name"
+    values =["nautilus-ec2"]
+  }
+}
+
+resource "aws_ami_from_instance" nautilus_ec2"{
+  name               = "nautilus-ec2-ami"
+  source_instance_id = data.aws_instance.nautilus_ec2.id
+
+  tags = {
+    Name = ""nautilus-ec2-ami"
+}
+}
