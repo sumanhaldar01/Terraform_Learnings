@@ -38,10 +38,11 @@ data "aws_security_group" "default" {
 }
 
 #Ami from exsting instance
+#if ec2 is not decleared in same main.tf
 # Fetch existing EC2 instance by Name tag
 data "aws_instance" "nautilus_ec2"{
   filter {
-    name= "tag:name"
+    name= "tag:Name"
     values =["nautilus-ec2"]
   }
 }
@@ -53,4 +54,13 @@ resource "aws_ami_from_instance" nautilus_ec2"{
   tags = {
     Name = ""nautilus-ec2-ami"
 }
+}
+#if ec2 is decleared in same main.tf
+resource "aws_ami_from_instance" "ec2" {
+  name               = "nautilus-ec2-ami"
+  source_instance_id = aws_instance.ec2.id
+
+  tags = {
+    Name = "nautilus-ec2-ami"
+  }
 }
