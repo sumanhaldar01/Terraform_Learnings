@@ -15,7 +15,7 @@ resource "aws_iam_policy" "terraform_policy" {
     Statement = [
       {
         Effect = "Allow"
-        #Action =["ec2:*"", "s3:*", vpc:*, "cloudwatch:*"]
+        #Action =["ec2:*", "s3:*", "vpc:*", "cloudwatch:*"]
         # Action = [
         #   "s3:ListBucket",
         #   "s3:GetObject",
