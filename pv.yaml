@@ -51,11 +51,49 @@ apiversion: v1
 kind: Service
 metadata:
   name: service-nautilus
+spec:apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ic-deploy-nautilus
 spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ic-nautilus
+  template:
+    metadata:
+      labels:
+        app: ic-nautilus
+    spec:
+      initContainers:
+        - name: ic-msg-nautilus
+          image: fedora:latest
+          command:
+            - '/bin/bash'
+            - '-c'
+            - 'echo Init Done - Welcome to xFusionCorp Industries > /ic/blog'
+          volumeMounts:
+            - name: ic-volume-nautilus
+              mountPath: /ic
+      containers:
+        - name: ic-main-nautilus
+          image: fedora:latest
+          command:
+            - '/bin/bash'
+            - '-c'
+            - 'while true; do cat /ic/blog; sleep 5; done'
+          volumeMounts:
+            - name: ic-volume-nautilus
+              mountPath: /ic
+      volumes:
+        - name: ic-volume-nautilus
+          emptyDir: {}
   selector:
     app: nautilus
   ports:
     - protocol: TCP
       port: 80
       targetPort: 80
+#################################Init Containers#################################################
+
 
