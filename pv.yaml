@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-nautilus
+  labels:
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/sysops"
+
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-nautilus
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-nautilus
+  labels:              
+    app: nautilus
+spec:
+  volumes:
+    - name: nautilus-storage
+      persistentVolumeClaim:
+        claimName: pvc-nautilus
+  containers:
+    - name: container-nautilus
+      image: nginx:latest
+      ports:
+        - containerPort: 80
+          name: http-server   
+      volumeMounts:
+        - mountPath: /usr/share/nginx/html   
+          name: nautilus-storage
+
+apiversion: v1
+kind: Service
+metadata:
+  name: service-nautilus
+spec:
+  selector:
+    app: nautilus
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+
