@@ -51,6 +51,7 @@ apiversion: v1
 kind: Service
 metadata:
   name: service-nautilus
+spec:  
   selector:
     app: nautilus
   ports:
@@ -58,7 +59,7 @@ metadata:
       port: 80
       targetPort: 80
 #################################Init Containers#################################################
-spec:apiVersion: apps/v1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ic-deploy-nautilus
