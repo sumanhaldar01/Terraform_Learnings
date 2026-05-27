@@ -51,14 +51,16 @@ apiversion: v1
 kind: Service
 metadata:
   name: service-nautilus
-spec:  
+spec:
   selector:
     app: nautilus
   ports:
     - protocol: TCP
       port: 80
       targetPort: 80
-#################################Init Containers#################################################
+
+##################################################################################################33
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -97,3 +99,48 @@ spec:
         - name: ic-volume-nautilus
           emptyDir: {}
 
+###############################################################################################################
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: example-redis-config
+data:
+  redis-config: |
+    maxmemory 2mb
+    maxmemory-policy allkeys-lru
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - name: redis-container
+          image: redis:alpine
+          ports:
+            - containerPort: 6379
+          resources:
+            requests:
+              cpu: 1
+          volumeMounts:
+            - name: data
+              mountPath: /redis-master-data
+            - name: redis-config
+              mountPath: /redis-master
+      volumes:
+        - name: data
+          emptyDir: {}
+        - name: redis-config
+          configMap:
+            name: my-redis-config
