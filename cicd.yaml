@@ -1,0 +1,144 @@
+name: cicd pipeline
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+        - 'kubernetes/**'
+  pull_request:
+    branches:
+      - main
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Run tests  
+        run: npm test #| echo "no tests found"
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Run ESLint
+        run: npm run lint      
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Build project
+        run: npm run build    
+
+  sonar-scan:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+      with:
+      # Disabling shallow clones is recommended for improving the relevancy of reporting
+        fetch-depth: 0
+    - name: SonarQube Scan
+      uses: SonarSource/sonarqube-scan-action@v4.1.0 # Ex: v4.1.0, or sha1, See the latest version at https://github.com/marketplace/actions/official-sonarqube-scan
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+
+  docker:
+    needs: [test, lint, build]
+    runs-on: ubuntu-latest
+    env: 
+      DOCKHUB_USER: ${{ secrets.DOCKER_USERNAME }}
+      IMAGE_NAME: ${{github.event.repository.name}}
+    outputs:
+      image_tag: ${{ steps.set_output.outputs.image_tag }}
+
+    steps:
+      - uses: actions/checkout@v7
+      
+      - name: Set image tag
+        id: set_output
+        run: echo "image_tag=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_OUTPUT
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+  
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Build image locally
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: ${{env.DOCKHUB_USER}}/${{env.IMAGE_NAME}}:sha-${{ steps.set_output.outputs.image_tag }}
+          load: true
+        
+      - name: Trivy Scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{env.DOCKHUB_USER}}/${{env.IMAGE_NAME}}:sha-${{ steps.set_output.outputs.image_tag }}
+          format: table
+          ignore-unfixed: true
+          exit-code: '1'
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{env.DOCKHUB_USER}}/${{env.IMAGE_NAME}}:sha-${{ steps.set_output.outputs.image_tag }}
+        
+  kubernetes:
+    needs: [sonar-scan, docker]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    if : github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v7
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }} #or if we use ${{ secrets.TOKEN }} then we need to add it to the repository secrets, give it write permissions so that permsssions block is not needed
+        
+    - name: Cofigure git identity
+      run: |
+        git config user.name "github-actions"
+        git config user.email "actions@github.com"
+    - name: Update image in deployment.yaml
+      env: 
+        DOCKHUB_USER: ${{ secrets.DOCKER_USERNAME }}
+        IMAGE_NAME: ${{github.event.repository.name}}
+      run: |
+        sed -i "s|image: .*|image: ${{env.DOCKHUB_USER}}/${{env.IMAGE_NAME}}:sha-${{ needs.docker.outputs.image_tag }}|g" kubernetes/deployment.yaml    
+    - name: Commit and push changes
+      run: |
+        git add kubernetes/deployment.yaml
+        git commit -m "Update image tag to sha-${{ needs.docker.outputs.image_tag }} [skip ci]" || echo "no changes to commit"
+        git push     
+
+
